@@ -2,9 +2,9 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
-from app.schemas.action_item import ActionItemResponse
-from app.schemas.decision import DecisionResponse
-from app.schemas.risk import RiskResponse
+from app.schemas.action_item import ActionItemBase, ActionItemResponse
+from app.schemas.decision import DecisionBase, DecisionResponse
+from app.schemas.risk import RiskBase, RiskResponse
 
 
 class MeetingBase(BaseModel):
@@ -14,9 +14,9 @@ class MeetingBase(BaseModel):
 
 
 class MeetingCreate(MeetingBase):
-    action_items: Optional[List[dict]] = None
-    decisions: Optional[List[dict]] = None
-    risks: Optional[List[dict]] = None
+    action_items: Optional[List[ActionItemBase]] = None
+    decisions: Optional[List[DecisionBase]] = None
+    risks: Optional[List[RiskBase]] = None
 
 
 class MeetingResponse(MeetingBase):

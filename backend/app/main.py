@@ -2,7 +2,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import APP_NAME, APP_VERSION, CORS_ORIGINS, DEBUG
 from app.database import engine, Base
-from app.routes import health
+from app.routes import (
+    health_router,
+    generate_router,
+    meetings_router,
+    action_items_router,
+)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -24,7 +29,10 @@ app.add_middleware(
 )
 
 # Include routes
-app.include_router(health.router)
+app.include_router(health_router)
+app.include_router(generate_router)
+app.include_router(meetings_router)
+app.include_router(action_items_router)
 
 
 @app.get("/", tags=["Root"])
