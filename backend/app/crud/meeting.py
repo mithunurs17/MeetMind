@@ -41,10 +41,10 @@ def create_meeting(db: Session, meeting_data: MeetingCreate):
         for item in meeting_data.action_items:
             action_item = ActionItem(
                 meeting_id=meeting.id,
-                task=item.get("task"),
-                owner=item.get("owner"),
-                due_date=item.get("due_date"),
-                status=item.get("status", "pending"),
+                task=item.task,
+                owner=item.owner,
+                due_date=item.due_date,
+                status=item.status or "pending",
             )
             db.add(action_item)
 
@@ -52,14 +52,14 @@ def create_meeting(db: Session, meeting_data: MeetingCreate):
         for decision in meeting_data.decisions:
             db.add(Decision(
                 meeting_id=meeting.id,
-                decision_text=decision.get("decision_text"),
+                decision_text=decision.decision_text,
             ))
 
     if meeting_data.risks:
         for risk in meeting_data.risks:
             db.add(Risk(
                 meeting_id=meeting.id,
-                risk_text=risk.get("risk_text"),
+                risk_text=risk.risk_text,
             ))
 
     db.commit()

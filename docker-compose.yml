@@ -30,8 +30,10 @@ services:
       API_HOST: 0.0.0.0
       API_PORT: 8000
       DEBUG: ${DEBUG:-True}
+      PYTHONPATH: /app
     ports:
       - "8000:8000"
+    working_dir: /app
     depends_on:
       db:
         condition: service_healthy
