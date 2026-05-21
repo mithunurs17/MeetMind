@@ -1,52 +1,76 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from app.models.meeting import Meeting
-from app.schemas.meeting import MeetingCreate, MeetingUpdate
+from app.models.action_item import ActionItem
+from app.models.decision import Decision
+from app.models.risk import Risk
+from app.schemas.meeting import MeetingCreate
+from app.schemas.action_item import ActionItemBase
+from app.schemas.decision import DecisionBase
+from app.schemas.risk import RiskBase
 
 
 def get_meeting(db: Session, meeting_id: int):
-    """Get a meeting by ID."""
-    return db.query(Meeting).filter(Meeting.id == meeting_id).first()
+    """Retrieve a meeting by ID with related items."""
+    return db.query(Meeting).options(
+        selectinload(Meeting.action_items),
+        selectinload(Meeting.decisions),
+        selectinload(Meeting.risks),
+    ).filter(Meeting.id == meeting_id).first()
 
 
-def get_all_meetings(db: Session, skip: int = 0, limit: int = 10):
-    """Get all meetings with pagination."""
-    return db.query(Meeting).offset(skip).limit(limit).all()
+def get_all_meetings(db: Session, skip: int = 0, limit: int = 20):
+    """Retrieve meetings with pagination."""
+    return db.query(Meeting).order_by(Meeting.created_at.desc()).offset(skip).limit(limit).all()
 
 
-def create_meeting(db: Session, meeting: MeetingCreate):
-    """Create a new meeting."""
-    db_meeting = Meeting(
-        title=meeting.title,
-        description=meeting.description,
-        participants=meeting.participants,
-        duration_minutes=meeting.duration_minutes
+def create_meeting(db: Session, meeting_data: MeetingCreate):
+    """Create a meeting and optional associated records."""
+    summary = meeting_data.summary
+    if not summary:
+        summary = meeting_data.raw_text[:600] + ("..." if len(meeting_data.raw_text) > 600 else "")
+
+    meeting = Meeting(
+        title=meeting_data.title,
+        raw_text=meeting_data.raw_text,
+        summary=summary,
     )
-    db.add(db_meeting)
-    db.commit()
-    db.refresh(db_meeting)
-    return db_meeting
+    db.add(meeting)
+    db.flush()
 
+    if meeting_data.action_items:
+        for item in meeting_data.action_items:
+            action_item = ActionItem(
+                meeting_id=meeting.id,
+                task=item.get("task"),
+                owner=item.get("owner"),
+                due_date=item.get("due_date"),
+                status=item.get("status", "pending"),
+            )
+            db.add(action_item)
 
-def update_meeting(db: Session, meeting_id: int, meeting_update: MeetingUpdate):
-    """Update an existing meeting."""
-    db_meeting = get_meeting(db, meeting_id)
-    if not db_meeting:
-        return None
-    
-    update_data = meeting_update.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(db_meeting, key, value)
-    
-    db.add(db_meeting)
+    if meeting_data.decisions:
+        for decision in meeting_data.decisions:
+            db.add(Decision(
+                meeting_id=meeting.id,
+                decision_text=decision.get("decision_text"),
+            ))
+
+    if meeting_data.risks:
+        for risk in meeting_data.risks:
+            db.add(Risk(
+                meeting_id=meeting.id,
+                risk_text=risk.get("risk_text"),
+            ))
+
     db.commit()
-    db.refresh(db_meeting)
-    return db_meeting
+    db.refresh(meeting)
+    return get_meeting(db, meeting.id)
 
 
 def delete_meeting(db: Session, meeting_id: int):
-    """Delete a meeting."""
-    db_meeting = get_meeting(db, meeting_id)
-    if db_meeting:
-        db.delete(db_meeting)
+    """Delete a meeting and its related items."""
+    meeting = get_meeting(db, meeting_id)
+    if meeting:
+        db.delete(meeting)
         db.commit()
-    return db_meeting
+    return meeting
