@@ -1,37 +1,31 @@
-from pydantic import BaseModel
+from __future__ import annotations
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
+from app.schemas.action_item import ActionItemResponse
+from app.schemas.decision import DecisionResponse
+from app.schemas.risk import RiskResponse
 
 
-class MeetingCreate(BaseModel):
-    """Schema for creating a new meeting."""
-    title: str
-    description: Optional[str] = None
-    participants: Optional[List[str]] = None
-    duration_minutes: Optional[int] = None
+class MeetingBase(BaseModel):
+    title: str = Field(..., example="Project Kickoff")
+    raw_text: str = Field(..., example="The meeting covered product roadmap and next steps...")
+    summary: Optional[str] = Field(None, example="Summary of meeting topics and decisions.")
 
 
-class MeetingUpdate(BaseModel):
-    """Schema for updating a meeting."""
-    title: Optional[str] = None
-    description: Optional[str] = None
-    minutes: Optional[str] = None
+class MeetingCreate(MeetingBase):
     action_items: Optional[List[dict]] = None
-    duration_minutes: Optional[int] = None
+    decisions: Optional[List[dict]] = None
+    risks: Optional[List[dict]] = None
 
 
-class MeetingResponse(BaseModel):
-    """Schema for meeting response."""
+class MeetingResponse(MeetingBase):
     id: int
-    title: str
-    description: Optional[str] = None
-    duration_minutes: Optional[int] = None
-    participants: Optional[List[str]] = None
-    minutes: Optional[str] = None
-    action_items: Optional[List[dict]] = None
-    recording_path: Optional[str] = None
     created_at: datetime
-    updated_at: datetime
+    action_items: List[ActionItemResponse] = []
+    decisions: List[DecisionResponse] = []
+    risks: List[RiskResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
