@@ -13,3 +13,7 @@ openai>=1.0.0
 spacy>=3.6.0
 dateparser>=1.1.8
 python-dateutil>=2.8.2
+pdfplumber>=0.8.0
+python-docx>=0.8.11
+Pillow>=9.5.0
+pytesseract>=0.3.10
