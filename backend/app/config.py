@@ -13,6 +13,16 @@ DATABASE_URL = os.getenv(
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
 
+# OpenRouter Configuration
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_API_BASE = os.getenv("OPENROUTER_API_BASE", "https://openrouter.ai/api/v1")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "gpt-4o-mini")
+
+# Pick AI model provider
+AI_API_KEY = OPENROUTER_API_KEY or OPENAI_API_KEY
+AI_API_BASE = OPENROUTER_API_BASE if OPENROUTER_API_KEY else None
+AI_MODEL = os.getenv("AI_MODEL") or (OPENROUTER_MODEL if OPENROUTER_API_KEY else OPENAI_MODEL)
+
 # Application Configuration
 APP_NAME = "MeetMind AI"
 APP_VERSION = "0.1.0"

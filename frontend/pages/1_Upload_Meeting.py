@@ -32,8 +32,8 @@ if submit:
             else:
                 result = api_client.extract_meeting_from_file(meeting_title, uploaded_file)
 
-        if result.get("error"):
-            st.error(f"Error: {result['error']}")
+        if result.get("error") or result.get("detail"):
+            st.error(f"Error: {result.get('error') or result.get('detail')}" )
         else:
             st.success("✅ Meeting minutes extracted and saved successfully!")
             st.subheader("Summary")

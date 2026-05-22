@@ -140,6 +140,10 @@ DEBUG=True
 # AI Configuration
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-3.5-turbo
+OPENROUTER_API_KEY=
+OPENROUTER_API_BASE=https://openrouter.ai/api/v1
+OPENROUTER_MODEL=gpt-4o-mini
+AI_MODEL=
 
 # Frontend Configuration
 API_URL=http://backend:8000

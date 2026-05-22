@@ -4,12 +4,17 @@ import json
 import re
 from typing import Any, Dict, List, Optional
 
-import openai
+from openai import OpenAI
 
+from app.config import AI_API_KEY, AI_API_BASE, AI_MODEL
 from app.utils.nlp import preprocess_transcript, parse_date
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-openai.api_key = OPENAI_API_KEY
+if AI_API_KEY and AI_API_BASE:
+    client = OpenAI(api_key=AI_API_KEY, base_url=AI_API_BASE)
+elif AI_API_KEY:
+    client = OpenAI(api_key=AI_API_KEY)
+else:
+    client = OpenAI()
 
 DEFAULT_PROMPT = (
     "You are an assistant that extracts structured meeting minutes from a raw meeting transcript.\n"
@@ -20,12 +25,40 @@ DEFAULT_PROMPT = (
 )
 
 
+def extract_message_content(message: Any) -> str:
+    if isinstance(message, dict):
+        content = message.get("content")
+        if content:
+            return content
+        reasoning = message.get("reasoning")
+        if reasoning:
+            return reasoning
+        reasoning_details = message.get("reasoning_details")
+    else:
+        content = getattr(message, "content", None)
+        if content:
+            return content
+        reasoning = getattr(message, "reasoning", None)
+        if reasoning:
+            return reasoning
+        reasoning_details = getattr(message, "reasoning_details", None)
+
+    if reasoning_details:
+        if isinstance(reasoning_details, str):
+            return reasoning_details
+        if isinstance(reasoning_details, list):
+            pieces = [item.get("text") for item in reasoning_details if isinstance(item, dict) and item.get("text")]
+            if pieces:
+                return " ".join(pieces)
+    return ""
+
+
 def call_openai_with_retries(prompt: str, max_retries: int = 3, backoff: float = 1.0) -> str:
     last_exc = None
     for attempt in range(1, max_retries + 1):
         try:
-            resp = openai.ChatCompletion.create(
-                model=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"),
+            resp = client.chat.completions.create(
+                model=AI_MODEL,
                 messages=[
                     {"role": "system", "content": DEFAULT_PROMPT},
                     {"role": "user", "content": prompt},
@@ -33,7 +66,8 @@ def call_openai_with_retries(prompt: str, max_retries: int = 3, backoff: float =
                 temperature=0.2,
                 max_tokens=1200,
             )
-            return resp.choices[0].message.content
+            message = resp.choices[0].message
+            return extract_message_content(message)
         except Exception as e:
             last_exc = e
             time.sleep(backoff * attempt)

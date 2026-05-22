@@ -24,7 +24,10 @@ class APIClient:
                 params={"skip": skip, "limit": limit},
                 timeout=15,
             )
-            return response.json()
+            payload = response.json()
+            if response.ok:
+                return payload
+            return {"error": payload.get("detail") or payload.get("error") or response.text}
         except Exception as e:
             return {"error": str(e)}
 
@@ -36,7 +39,10 @@ class APIClient:
                 json=payload,
                 timeout=120,
             )
-            return response.json()
+            payload = response.json()
+            if response.ok:
+                return payload
+            return {"error": payload.get("detail") or payload.get("error") or response.text}
         except Exception as e:
             return {"error": str(e)}
 
@@ -56,7 +62,10 @@ class APIClient:
                 files=files,
                 timeout=180,
             )
-            return response.json()
+            payload = response.json()
+            if response.ok:
+                return payload
+            return {"error": payload.get("detail") or payload.get("error") or response.text}
         except Exception as e:
             return {"error": str(e)}
 
@@ -67,7 +76,10 @@ class APIClient:
                 json={"status": status},
                 timeout=15,
             )
-            return response.json()
+            payload = response.json()
+            if response.ok:
+                return payload
+            return {"error": payload.get("detail") or payload.get("error") or response.text}
         except Exception as e:
             return {"error": str(e)}
 
