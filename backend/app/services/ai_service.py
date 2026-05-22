@@ -2,6 +2,7 @@ import os
 import time
 import json
 import re
+import logging
 from typing import Any, Dict, List, Optional
 
 from openai import OpenAI
@@ -21,6 +22,7 @@ DEFAULT_PROMPT = (
     "Return ONLY valid JSON with these keys:\n"
     "summary: string, decisions: [string], action_items: [{task:string, owner:string|null, due_date:string|null, status:string}], risks: [string], open_questions: [string]\n"
     "Use ISO-8601 date formats when possible. Use null for missing owner or due_date.\n"
+    "If the transcript is empty or extremely short, return an empty string for `summary` or the verbatim transcript as the `summary` — do NOT return an error phrase like 'No meeting transcript provided'.\n"
     "Do not include any explanation outside the JSON object."
 )
 
@@ -129,23 +131,43 @@ def build_prompt(raw_text: str, title: Optional[str], preprocessed: Dict[str, An
         f"Detected Entities: {json.dumps(entities)}\n\n"
         "Extract an executive summary, decisions, action items, risks, and open questions. "
         "Return ONLY valid JSON without any surrounding markdown or commentary. "
-        "If a field is empty, return an empty list or an empty string as appropriate."
+        "If a field is empty, return an empty list or an empty string as appropriate. "
+        "Do not state that the transcript is missing (for example, do NOT say 'No meeting transcript provided')."
     )
 
 
 def extract_structured_meeting(raw_text: str, title: Optional[str] = None) -> Dict[str, Any]:
+    # Short-transcript heuristic: if the transcript is present but very short,
+    # avoid calling the AI and return the raw text as the summary to prevent
+    # models from responding with misleading messages like 'No meeting transcript provided'.
+    if raw_text and len(raw_text.strip()) < 40:
+        pre = preprocess_transcript(raw_text)
+        empty_data = {
+            "summary": raw_text.strip(),
+            "decisions": [],
+            "action_items": [],
+            "risks": [],
+            "open_questions": [],
+        }
+        return normalize_ai_response(empty_data, title, raw_text, pre.get("persons", []))
+
     pre = preprocess_transcript(raw_text)
     prompt = build_prompt(raw_text, title, pre)
     raw_response = call_openai_with_retries(prompt)
-
+    # Try a small number of reparsing attempts if the model output is not valid JSON.
     for attempt in range(2):
         try:
             data = extract_json_object(raw_response)
             break
-        except Exception:
+        except Exception as e:
+            logging.warning("AI JSON parse failed (attempt %s): %s", attempt + 1, str(e))
+            logging.debug("Raw AI response (truncated): %s", (raw_response or '')[:2000])
+            # Ask the model to return only a JSON object and retry
             raw_response = call_openai_with_retries(
-                "The previous response was not valid JSON. Return ONLY a valid JSON object with summary, decisions, action_items, risks, and open_questions.")
+                "The previous response was not valid JSON. Return ONLY a valid JSON object with keys: summary, decisions, action_items, risks, and open_questions. Do not include any surrounding text.")
     else:
-        raise ValueError("AI did not return valid JSON")
+        # Include the last raw response in the exception to aid debugging.
+        truncated = (raw_response or "")[:2000]
+        raise ValueError(f"AI did not return valid JSON. Last raw response (truncated to 2000 chars): {truncated}")
 
     return normalize_ai_response(data, title, raw_text, pre.get("persons", []))
