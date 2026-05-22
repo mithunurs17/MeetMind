@@ -7,6 +7,7 @@ from app.routes import (
     generate_router,
     meetings_router,
     action_items_router,
+    ai_router,
 )
 
 # Create database tables
@@ -33,7 +34,7 @@ app.include_router(health_router)
 app.include_router(generate_router)
 app.include_router(meetings_router)
 app.include_router(action_items_router)
-    app.include_router(ai_router)
+app.include_router(ai_router)
 
 
 @app.get("/", tags=["Root"])
