@@ -4,67 +4,74 @@ from utils.api_client import api_client
 st.set_page_config(page_title="Upload Meeting", page_icon="📹")
 
 st.title("📹 Upload Meeting")
-st.markdown("Upload and process your meeting recording")
+st.markdown("Upload a transcript or meeting document and extract minutes with AI.")
 
-col1, col2 = st.columns([2, 1])
-
-with col1:
-    st.subheader("Meeting Details")
-    
-    meeting_title = st.text_input(
-        "Meeting Title",
-        placeholder="Enter meeting title"
+with st.form(key="meeting_form"):
+    meeting_title = st.text_input("Meeting Title", placeholder="Enter meeting title")
+    raw_text = st.text_area(
+        "Meeting Transcript",
+        placeholder="Paste the raw meeting transcript here...",
+        height=200,
     )
-    
-    meeting_description = st.text_area(
-        "Meeting Description",
-        placeholder="Enter meeting description (optional)",
-        height=100
-    )
-    
-    participants = st.multiselect(
-        "Participants",
-        ["John Doe", "Jane Smith", "Mike Johnson", "Sarah Williams"],
-        help="Select or type participant names"
-    )
-    
     uploaded_file = st.file_uploader(
-        "Upload Meeting Recording",
-        type=["mp3", "mp4", "wav", "webm"],
-        help="Supported formats: MP3, MP4, WAV, WebM"
+        "Or upload a transcript/document",
+        type=["txt", "pdf", "docx", "png", "jpg", "jpeg"],
+        help="Supported formats: txt, pdf, docx, png, jpg, jpeg",
     )
+    submit = st.form_submit_button(label="📤 Extract Meeting Minutes")
 
-with col2:
-    st.subheader("Preview")
-    if uploaded_file:
-        st.write(f"**File:** {uploaded_file.name}")
-        st.write(f"**Size:** {uploaded_file.size / 1024 / 1024:.2f} MB")
-    else:
-        st.info("📁 No file selected")
-
-st.markdown("---")
-
-if st.button("📤 Process Meeting", type="primary", use_container_width=True):
+if submit:
     if not meeting_title:
-        st.error("Please enter a meeting title")
-    elif not uploaded_file:
-        st.error("Please upload a meeting recording")
+        st.error("Please enter a meeting title.")
+    elif not raw_text and not uploaded_file:
+        st.error("Please paste transcript text or upload a supported file.")
     else:
-        with st.spinner("Processing meeting... This may take a few minutes"):
-            result = api_client.create_meeting(
-                title=meeting_title,
-                description=meeting_description,
-                participants=participants
-            )
-            
-            if "error" not in result:
-                st.success("✅ Meeting processed successfully!")
-                st.json(result)
+        with st.spinner("Processing meeting with AI..."):
+            if raw_text:
+                result = api_client.extract_meeting_from_text(meeting_title, raw_text)
             else:
-                st.error(f"Error processing meeting: {result.get('error')}")
+                result = api_client.extract_meeting_from_file(meeting_title, uploaded_file)
+
+        if result.get("error") or result.get("detail"):
+            st.error(f"Error: {result.get('error') or result.get('detail')}" )
+        else:
+            st.success("✅ Meeting minutes extracted and saved successfully!")
+            st.subheader("Summary")
+            st.write(result.get("summary", "No summary returned."))
+
+            st.subheader("Decisions")
+            if result.get("decisions"):
+                for decision in result["decisions"]:
+                    st.write(f"• {decision}")
+            else:
+                st.info("No decisions extracted.")
+
+            st.subheader("Action Items")
+            if result.get("action_items"):
+                for item in result["action_items"]:
+                    st.markdown(
+                        f"- **{item.get('task')}** | Owner: {item.get('owner') or 'Unassigned'} | "
+                        f"Due: {item.get('due_date') or 'TBD'} | Status: {item.get('status') or 'pending'}"
+                    )
+            else:
+                st.info("No action items extracted.")
+
+            st.subheader("Risks")
+            if result.get("risks"):
+                for risk in result["risks"]:
+                    st.write(f"• {risk}")
+            else:
+                st.info("No risks detected.")
+
+            st.subheader("Open Questions")
+            if result.get("open_questions"):
+                for question in result["open_questions"]:
+                    st.write(f"• {question}")
+            else:
+                st.info("No open questions found.")
 
 st.markdown("---")
 st.markdown("**Tips:**")
-st.markdown("- Ensure clear audio for better transcription accuracy")
-st.markdown("- Include all participants in the meeting details")
-st.markdown("- Supported formats: MP3, MP4, WAV, WebM")
+st.markdown("- Paste raw transcript text for the best AI output.")
+st.markdown("- Upload meeting notes or scanned documents for extraction.")
+st.markdown("- Use clear speaker text for better decision and action item capture.")

@@ -10,15 +10,17 @@ from app.routes import (
     ai_router,
 )
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
-
 # Initialize FastAPI app
 app = FastAPI(
     title=APP_NAME,
     version=APP_VERSION,
     description="AI-powered Meeting Minutes & Action Item Extractor"
 )
+
+
+@app.on_event("startup")
+def create_tables():
+    Base.metadata.create_all(bind=engine)
 
 # Add CORS middleware
 app.add_middleware(

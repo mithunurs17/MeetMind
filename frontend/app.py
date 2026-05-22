@@ -10,55 +10,48 @@ st.set_page_config(
 st.title("🎯 MeetMind AI")
 st.subheader("AI-powered Meeting Minutes & Action Item Extractor")
 
+health_status = api_client.health_check()
+meetings_response = api_client.get_meetings()
+meetings = []
+action_items = []
+
+if isinstance(meetings_response, list):
+    meetings = meetings_response
+    for meeting in meetings:
+        for item in meeting.get("action_items", []):
+            action_items.append(item)
+
+participant_names = {
+    item.get("owner") for item in action_items if item.get("owner")
+}
+
 # Sidebar
 with st.sidebar:
     st.markdown("---")
     st.markdown("### Navigation")
     st.markdown("Use the pages menu to navigate between features:")
-    st.markdown("- 📹 **Upload Meeting**: Upload and process meeting recordings")
+    st.markdown("- 📹 **Upload Meeting**: Upload and process meeting transcripts")
     st.markdown("- 📋 **View Minutes**: Review extracted meeting minutes")
     st.markdown("- ✅ **Action Items**: Manage action items and follow-ups")
-    
     st.markdown("---")
     st.markdown("### API Status")
-    health_status = api_client.health_check()
     if health_status.get("status") == "healthy":
         st.success("✅ Backend Connected")
     else:
         st.error("❌ Backend Disconnected")
-    
+
     if health_status.get("database"):
         st.info(f"Database: {health_status.get('database')}")
 
-
 # Main content
 col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.metric(
-        "Total Meetings",
-        "0",
-        help="Total number of meetings processed"
-    )
-
-with col2:
-    st.metric(
-        "Action Items",
-        "0",
-        help="Total pending action items"
-    )
-
-with col3:
-    st.metric(
-        "Participants",
-        "0",
-        help="Total unique participants"
-    )
+col1.metric("Total Meetings", len(meetings))
+col2.metric("Action Items", len(action_items))
+col3.metric("Participants", len([name for name in participant_names if name]))
 
 st.markdown("---")
 
 st.info(
-    "👋 Welcome to MeetMind AI! This application helps you extract meeting minutes "
-    "and action items from your meetings automatically using AI. "
-    "Get started by uploading a meeting recording or selecting a page from the menu."
+    "👋 Welcome to MeetMind AI! Extract minutes, decisions, and action items from meeting transcripts "
+    "using AI-enhanced NLP. Start by uploading a transcript or using the navigation menu."
 )

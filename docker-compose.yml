@@ -3,6 +3,8 @@ services:
   db:
     image: postgres:16-alpine
     container_name: meetmind_db
+    env_file:
+      - .env
     environment:
       POSTGRES_USER: ${DATABASE_USER:-meetmind_user}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-meetmind_password}
@@ -25,8 +27,10 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: meetmind_backend
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: postgresql://${DATABASE_USER:-meetmind_user}:${DATABASE_PASSWORD:-meetmind_password}@db:5432/${DATABASE_NAME:-meetmind_db}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${DATABASE_USER:-meetmind_user}:${DATABASE_PASSWORD:-meetmind_password}@db:5432/${DATABASE_NAME:-meetmind_db}}
       API_HOST: 0.0.0.0
       API_PORT: 8000
       DEBUG: ${DEBUG:-True}
@@ -49,9 +53,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: meetmind_frontend
+    env_file:
+      - .env
     environment:
-      API_URL: http://backend:8000
-      STREAMLIT_PORT: 8501
+      API_URL: ${API_URL:-http://backend:8000}
+      STREAMLIT_PORT: ${STREAMLIT_PORT:-8501}
     ports:
       - "8501:8501"
     depends_on:
