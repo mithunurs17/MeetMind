@@ -123,21 +123,23 @@ CREATE TABLE meetings (
 
 ## 🔧 Environment Configuration
 
-All configuration is managed through the `.env` file:
+All configuration is managed through the `.env` file. Copy `.env.example` to `.env` if needed.
 
 ```env
 # Database Configuration
-DATABASE_URL=postgresql://meetmind_user:meetmind_password@db:5432/meetmind_db
-DATABASE_HOST=db
-DATABASE_PORT=5432
-DATABASE_NAME=meetmind_db
 DATABASE_USER=meetmind_user
 DATABASE_PASSWORD=meetmind_password
+DATABASE_NAME=meetmind_db
+DATABASE_URL=postgresql://meetmind_user:meetmind_password@db:5432/meetmind_db
 
 # Backend Configuration
 API_HOST=0.0.0.0
 API_PORT=8000
 DEBUG=True
+
+# AI Configuration
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-3.5-turbo
 
 # Frontend Configuration
 API_URL=http://backend:8000

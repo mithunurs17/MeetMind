@@ -9,6 +9,10 @@ DATABASE_URL = os.getenv(
     "postgresql://meetmind_user:meetmind_password@db:5432/meetmind_db"
 )
 
+# OpenAI Configuration
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+
 # Application Configuration
 APP_NAME = "MeetMind AI"
 APP_VERSION = "0.1.0"

@@ -33,3 +33,11 @@ class Meeting(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+
+    @property
+    def open_questions(self):
+        return [
+            risk.risk_text.replace("OPEN QUESTION:", "").strip()
+            for risk in self.risks
+            if isinstance(risk.risk_text, str) and risk.risk_text.startswith("OPEN QUESTION:")
+        ]

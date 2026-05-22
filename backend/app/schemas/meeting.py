@@ -19,12 +19,18 @@ class MeetingCreate(MeetingBase):
     risks: Optional[List[RiskBase]] = None
 
 
+class MeetingAIRequest(BaseModel):
+    title: Optional[str] = Field(None, example="Project Kickoff")
+    raw_text: str = Field(..., example="The meeting covered product roadmap and next steps...")
+
+
 class MeetingResponse(MeetingBase):
     id: int
     created_at: datetime
     action_items: List[ActionItemResponse] = []
     decisions: List[DecisionResponse] = []
     risks: List[RiskResponse] = []
+    open_questions: List[str] = []
 
     model_config = {
         "from_attributes": True
