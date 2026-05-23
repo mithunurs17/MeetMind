@@ -3,6 +3,11 @@ from datetime import datetime, date
 
 import streamlit as st
 from utils.api_client import api_client
+from utils.export import (
+    build_export_filename,
+    create_meeting_docx,
+    create_meeting_pdf,
+)
 from utils.ui import apply_theme
 
 st.set_page_config(page_title="View Minutes", page_icon="📋", layout="wide")
@@ -148,15 +153,40 @@ markdown_export += "\n## Open Questions\n"
 for question in export_payload["open_questions"]:
     markdown_export += f"- {question}\n"
 
-st.download_button(
-    "Download editable meeting notes (JSON)",
-    json.dumps(export_payload, default=str, indent=2),
-    file_name=f"meeting_{selected_meeting.get('id')}_minutes.json",
-    mime="application/json",
+pdf_name, timestamp = build_export_filename(selected_meeting.get("title", "meeting"), "pdf")
+docx_name, _ = build_export_filename(selected_meeting.get("title", "meeting"), "docx")
+pdf_bytes = create_meeting_pdf(
+    title=selected_meeting.get("title", "Meeting"),
+    summary=editable_summary,
+    decisions=export_payload["decisions"],
+    action_items=action_items,
+    risks=risks,
+    open_questions=export_payload["open_questions"],
+    filename=pdf_name,
+    timestamp=timestamp,
 )
+docx_bytes = create_meeting_docx(
+    title=selected_meeting.get("title", "Meeting"),
+    summary=editable_summary,
+    decisions=export_payload["decisions"],
+    action_items=action_items,
+    risks=risks,
+    open_questions=export_payload["open_questions"],
+    filename=docx_name,
+    timestamp=timestamp,
+)
+
+
 st.download_button(
     "Download editable minutes (Markdown)",
     markdown_export,
     file_name=f"meeting_{selected_meeting.get('id')}_notes.md",
     mime="text/markdown",
+)
+
+st.download_button(
+    "Download editable minutes (DOCX)",
+    docx_bytes,
+    file_name=docx_name,
+    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 )
